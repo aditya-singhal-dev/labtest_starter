@@ -15,9 +15,48 @@
         <td>{{ o.quantity }}</td>
         <td>{{ o.order_date|date:"d-m-Y" }}</td>
         <td class="status">{{ o.status }}</td>
-        <td></td>
+        <td>
+    {% if o.status == "Pending" %}
+        <button class="btn btn-success btn-sm"
+                onclick="markDelivered({{ o.id }}, this)">
+            Mark Delivered
+        </button>
+    {% endif %}
+</td>
       </tr>
     {% endfor %}
   </tbody>
 </table>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+function markDelivered(id, button) {
+
+    fetch(`/api/orders/${id}/deliver/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}"
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Request failed");
+        }
+        return response.json();
+    })
+    .then(data => {
+        let row = document.getElementById("order-" + id);
+
+        row.querySelector(".status").innerText = data.status;
+
+        button.style.display = "none";
+    })
+    .catch(error => {
+        alert("Could not update order");
+        console.error(error);
+    });
+}
+</script>
 {% endblock %}

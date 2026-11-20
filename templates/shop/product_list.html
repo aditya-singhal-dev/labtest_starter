@@ -2,8 +2,43 @@
 {% block title %}Products{% endblock %}
 {% block content %}
 <h2>Products</h2>
-
 {# Add search / filter / sort forms here #}
+
+<form method="GET" class="mb-4">
+
+    <!-- Search input -->
+    <input
+        type="text"
+        name="q"
+        value="{{ q }}"
+        placeholder="Search products">
+
+    <!-- Category dropdown -->
+    <select name="category">
+
+        <option value="">All Categories</option>
+
+        {% for c in categories %}
+
+        <option value="{{ c.id }}"
+            {% if selected_category == c.id|stringformat:"s" %}
+                selected
+            {% endif %}>
+
+            {{ c.name }}
+
+        </option>
+
+        {% endfor %}
+
+    </select>
+
+    <button type="submit" class="btn btn-primary">
+        Search
+    </button>
+
+</form>
+
 
 <table class="table table-striped table-bordered">
   <thead class="table-dark">
@@ -19,7 +54,95 @@
         <td>{{ p.stock }}</td>
         <td>{{ p.added_on|date:"d-m-Y" }}</td>
       </tr>
+      {% empty %}
+        <tr>
+            <td colspan="6">No products found</td>
+        </tr>
     {% endfor %}
   </tbody>
 </table>
+
+<hr>
+
+<h3>Live Search</h3>
+
+<input
+    type="text"
+    id="liveSearch"
+    class="form-control mb-3"
+    placeholder="Type at least 2 characters">
+
+<table class="table table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>Name</th>
+            <th>SKU</th>
+            <th>Category</th>
+            <th>Price</th>
+        </tr>
+    </thead>
+
+    <tbody id="liveResults">
+    </tbody>
+</table>
+
+
+{% block scripts %}
+
+<script>
+const searchBox = document.getElementById("liveSearch");
+const results = document.getElementById("liveResults");
+
+searchBox.addEventListener("input", async function() {
+
+    let q = searchBox.value.trim();
+
+    // Do nothing if less than 2 characters
+    if (q.length < 2) {
+        results.innerHTML = "";
+        return;
+    }
+
+    // Call Q2 API
+    let response = await fetch(
+        "/api/products/search/?q=" + encodeURIComponent(q)
+    );
+
+    // Convert JSON response into JavaScript data
+    let data = await response.json();
+
+    // Clear previous results
+    results.innerHTML = "";
+
+    // Show message when no products match
+    if (data.length === 0) {
+        results.innerHTML =
+            "<tr><td colspan='4'>No products found</td></tr>";
+        return;
+    }
+
+    // Create a table row for each product
+    data.forEach(function(p) {
+
+        let row = document.createElement("tr");
+
+        [p.name, p.sku, p.category__name, p.price]
+            .forEach(function(value) {
+
+                let cell = document.createElement("td");
+                cell.textContent = value;
+                row.appendChild(cell);
+
+            });
+
+        results.appendChild(row);
+
+    });
+
+});
+
+</script>
+
+{% endblock %}
+
 {% endblock %}
